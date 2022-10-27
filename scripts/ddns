@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+readonly HZ="${AWS_HOSTED_ZONE}"
+readonly DOMAIN="${HOSTNAME}"
+
+err() {
+  echo "[$(date -u +'%Y-%m-%dT%H:%M:%S%:z')]: $*" >&2
+}
+
+main() {
+  if ! [[ -x "$(command -v aws)" ]]; then
+    err "aws cli not installed"; exit 1
+  fi
+
+  # Get the IP address.
+  ip="$(dig -4 +short myip.opendns.com @resolver1.opendns.com)"
+  if [[ -z "${ip}" ]]; then
+    err "failed to get ip address"; exit 2
+  fi
+  printf "ip: %s\n" "${ip}"
+
+  # Update the domains.
+  update='{
+  "Comment": "DDNS",
+  "Changes": [
+   {
+     "Action": "UPSERT",
+     "ResourceRecordSet": {
+       "Name": "'"${DOMAIN}"'",
+       "Type": "A",
+       "TTL": 300,
+       "ResourceRecords": [{ "Value": "'"${ip}"'" }]
+     }
+   }
+ ]
+}'
+
+  printf "requesting update for %s\n" "${DOMAIN}"
+  aws route53 change-resource-record-sets \
+      --hosted-zone-id "${HZ}" \
+      --change-batch "${update}"
+}
+
+main "$@"
