@@ -1,0 +1,14 @@
+[Unit]
+Description=DDNS
+RefuseManualStart=no
+RefuseManualStop=no
+
+[Timer]
+OnBootSec=1min
+OnCalendar=*-*-* *:00:00
+Persistent=true
+RandomizedDelaySec=1min
+Unit=ddns.service
+
+[Install]
+WantedBy=default.target

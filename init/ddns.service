@@ -1,0 +1,11 @@
+[Unit]
+Description=DDNS
+RefuseManualStart=no
+RefuseManualStop=yes
+
+[Service]
+Type=oneshot
+ExecStart=r53
+
+[Install]
+WantedBy=timers.target
