@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+readonly RECIPIENT=""
+
+main() {
+  echo "${HOSTNAME}: motion detected at $(date '+%Y-%m-%dT%H:%M:%S%:z')." | \
+    mutt -s "${HOSTNAME}: Motion Detected" \
+	 -- "${RECIPIENT}"
+}
+
+main "$@"
