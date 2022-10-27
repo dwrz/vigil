@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+readonly cameras=(
+  "https://${HOST0}:${PORT}/${CAMERA0}"
+  "https://${HOST0}:${PORT}/${CAMERA1}"
+  "https://${HOST1}:${PORT}/${CAMERA0}"
+  "https://${HOST2}:${PORT}/${CAMERA0}"
+)
+readonly auth=(
+  "${USER0}:${PW0}"
+  "${USER0}:${PW0}"
+  "${USER1}:${PW1}"
+  "${USER2}:${PW2}"
+)
+
+err() {
+  echo "[$(date -u +'%Y-%m-%dT%H:%M:%S%:z')]: $*" >&2
+}
+
+main() {
+  local url="detection/status"
+
+  case "$1" in
+    "capture"|"c") url="detection/snapshot" ;;
+    "pause"|"p") url="detection/pause" ;;
+    "start"|"s") url="detection/start" ;;
+    "status"|"") url="detection/status" ;;
+    *) err "unrecognized command: $1"; exit 1
+  esac
+
+  for i in "${!cameras[@]}"; do
+    curl --digest --user "${auth[i]}" "${cameras[i]}/${url}"
+  done
+}
+
+main "$@"
