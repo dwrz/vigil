@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+readonly BUCKET="${B2_BUCKET}"
+
+main() {
+  # Sync the timelapse.
+  backblaze-b2 sync \
+               --threads 2 \
+               "${HOME}/timelapse/" \
+               "b2://${BUCKET}/${HOSTNAME}/timelapse/"
+
+  # Delete outdated files.
+  # This assumes the timelapse is created on an hourly basis.
+  find "${HOME}/timelapse/" -mmin +60 -delete
+}
+
+main "$@"
