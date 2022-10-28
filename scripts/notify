@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+# Backblaze B2 Bucket
+readonly BUCKET="${B2_BUCKET}"
+
+# Devices to check -- if populated and up, no notifications are sent.
+readonly DEVICES=()
+
+# COCO Labels
+readonly LABEL_PERSON=0
+readonly LABEL_CAT=15
+
+# Lockfile to ensure that only one instance of the script is running.
+readonly LOCKFILE="/tmp/motion-notify.lock.d"
+
+# yolov7 working directory.
+readonly PROJECT="/tmp/yolov7"
+
+# Notification recipient.
+readonly RECIPIENT="${NOTIFICATION_RECIPIENT}"
+
+acquire_lock () {
+  while true; do
+    if mkdir "${LOCKFILE}"; then
+      break;
+    fi
+    sleep 1
+  done
+}
+
+check_devices() {
+  for device in "${DEVICES[@]}"; do
+    if ping -c 1 -w 1 "${device}" &> "/dev/null"; then
+      return 0
+    fi
+  done
+
+  return 255
+}
+
+detect_objects() {
+  local filepath="$1"
+
+  python "${HOME}/yolov7/detect.py" \
+	 --exist-ok \
+	 --no-trace \
+	 --save-txt \
+	 --project "${PROJECT}" \
+	 --name "motion" \
+	 --weights "${HOME}/yolov7/yolov7-tiny.pt" \
+	 --source "${filepath}"
+}
+
+notify() {
+  local name="$1"
+
+  echo "${HOSTNAME} at $(date '+%Y-%m-%dT%H:%M:%S%:z')" | \
+    mutt -a "${PROJECT}/motion/${name}.jpg" \
+	 -s "${HOSTNAME}: Motion Detected" \
+	 -- "${RECIPIENT}"
+}
+
+upload() {
+  local name="$1"
+
+  backblaze-b2 upload-file \
+	       --threads 2 \
+	       "${BUCKET}" \
+	       "${PROJECT}/motion/${name}.jpg" \
+	       "${HOSTNAME}/${name}.jpg"
+}
+
+delete_outdated() {
+  local filepath="$1"
+
+  acquire_lock
+
+  rm -f "$1"
+  rm -f "${PROJECT}/motion/${name}.jpg"
+  find "${HOME}/photo/" -mmin +5 -delete
+  find "${HOME}/timelapse/" -mmin +60 -delete
+  find "${PROJECT}/motion/" -iname "*.jpg" -mmin +5 -delete
+  find "${PROJECT}/motion/labels/" -mmin +5 -delete
+
+  release_lock
+}
+
+release_lock () {
+  rmdir "${LOCKFILE}"
+}
+
+main() {
+  local filepath="$1"
+  local name
+  name="$(basename "${filepath}" .jpg)"
+
+  # If devices are present, don't notify.
+  if (( "${#DEVICES[@]}" )); then
+    if check_devices; then
+      delete_outdated "${filepath}" "${name}"
+      exit 0
+    fi
+  fi
+
+  detect_objects "${filepath}"
+
+  # Send a notification if we match any labels.
+  labels="$(awk '{print $1}' "${PROJECT}/motion/labels/${name}.txt")"
+  if echo "${labels}" | grep -qw "${LABEL_PERSON}\|${LABEL_CAT}"; then
+    notify "${name}"
+  fi
+
+  upload "${name}"
+
+  delete_outdated "${filepath}" "${name}"
+}
+
+main "$@"
