@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 
+readonly WEBCONTROL_PORT="8080"
+
 readonly cameras=(
-  "https://${HOST0}:${PORT}/${CAMERA0}"
-  "https://${HOST0}:${PORT}/${CAMERA1}"
-  "https://${HOST1}:${PORT}/${CAMERA0}"
-  "https://${HOST2}:${PORT}/${CAMERA0}"
+  "https://${HOST0}:${WEBCONTROL_PORT}/0"
+#  "https://${HOST0}:${WEBCONTROL_PORT}/1"
+#  "https://${HOST1}:${WEBCONTROL_PORT}/${CAMERA0}"
+#  "https://${HOST2}:${WEBCONTROL_PORT}/${CAMERA0}"
 )
 readonly auth=(
-  "${USER0}:${PW0}"
-  "${USER0}:${PW0}"
-  "${USER1}:${PW1}"
-  "${USER2}:${PW2}"
+  "${MOTION_USER}:${MOTION_PASSWORD}"
+#  "${USER0}:${PW0}"
+#  "${USER1}:${PW1}"
+#  "${USER2}:${PW2}"
 )
 
 err() {
