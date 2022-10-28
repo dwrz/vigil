@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+readonly FILES=(
+  "./config/motion.conf"
+  "./config/msmtprc"
+  "./config/muttrc"
+  "./scripts/alert"
+  "./scripts/cameras"
+  "./scripts/notify"
+  "./scripts/sync"
+)
+
+B2_BUCKET="my-bucket-name"
+CAMERA_NAME="Kitchen"
+DOMAIN="kitchen.example.com"
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_PORT="587"
+EMAIL_USER="user@example.com"
+MOTION_PASSWORD="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 24 ; echo '')"
+MOTION_USER="${USER}"
+NOTIFICATION_RECIPIENT="1234567890@sms.example.com"
+
+input_settings() {
+  local input
+
+  # Set the B2 bucket name.
+  printf "B2 Bucket (%s): " "${B2_BUCKET}"
+  read -r input
+  B2_BUCKET="${input:-$B2_BUCKET}"
+
+  # Set the camera name.
+  printf "Camera name (%s): " "${CAMERA_NAME}"
+  read -r input
+  CAMERA_NAME="${input:-$CAMERA_NAME}"
+
+  # Set the domain.
+  printf "Domain (%s): " "${DOMAIN}"
+  read -r input
+  DOMAIN="${input:-$DOMAIN}"
+
+  # Set the Email user and sender.
+  printf "Email host (%s): " "${EMAIL_HOST}"
+  read -r input
+  EMAIL_HOST="${input:-$EMAIL_HOST}"
+
+  # Set the Email port and sender.
+  printf "Email port (%s): " "${EMAIL_PORT}"
+  read -r input
+  EMAIL_PORT="${input:-$EMAIL_PORT}"
+
+  # Set the Email user and sender.
+  printf "Email user (%s): " "${EMAIL_USER}"
+  read -r input
+  EMAIL_USER="${input:-$EMAIL_USER}"
+
+  # Set the Email password.
+  printf "Email password (%s): " "${EMAIL_PASSWORD}"
+  read -r input
+  EMAIL_PASSWORD="${input:-$EMAIL_PASSWORD}"
+
+  # Set the Motion user for webcontrol and livestream.
+  printf "Motion user (%s): " "${MOTION_USER}"
+  read -r input
+  MOTION_USER="${input:-$MOTION_USER}"
+
+  # Set the Motion password for webcontrol and livestream.
+  printf "Motion password (%s): " "${MOTION_PASSWORD}"
+  read -r input
+  MOTION_PASSWORD="${input:-$MOTION_PASSWORD}"
+
+  # Set the notification recipient.
+  printf "Notification recipient (%s): " "${NOTIFICATION_RECIPIENT}"
+  read -r input
+  NOTIFICATION_RECIPIENT="${input:-$NOTIFICATION_RECIPIENT}"
+}
+
+print_settings() {
+  printf "Your settings:\n"
+  printf "B2 Bucket: %s\n" "${B2_BUCKET}"
+  printf "Camera name: %s\n" "${CAMERA_NAME}"
+  printf "Domain: %s\n" "${DOMAIN}"
+  printf "Email host: %s\n" "${EMAIL_HOST}"
+  printf "Email port: %s\n" "${EMAIL_PORT}"
+  printf "Email user: %s\n" "${EMAIL_USER}"
+  printf "Email password: %s\n" "${EMAIL_PASSWORD}"
+  printf "Motion user: %s\n" "${MOTION_USER}"
+  printf "Motion password: %s\n" "${MOTION_PASSWORD}"
+  printf "Notification recipient: %s\n" "${NOTIFICATION_RECIPIENT}"
+}
+
+write_settings() {
+  for f in "${FILES[@]}"; do
+    sed -i "s/\${B2_BUCKET}/${B2_BUCKET}/g" "${f}"
+    sed -i "s/\${CAMERA_NAME}/${CAMERA_NAME}/g" "${f}"
+    sed -i "s/\${DOMAIN}/${DOMAIN}/g" "${f}"
+    sed -i "s/\${EMAIL_HOST}/${EMAIL_HOST}/g" "${f}"
+    sed -i "s/\${EMAIL_PORT}/${EMAIL_PORT}/g" "${f}"
+    sed -i "s/\${EMAIL_USER}/${EMAIL_USER}/g" "${f}"
+    sed -i "s/\${EMAIL_PASSWORD}/${EMAIL_PASSWORD}/g" "${f}"
+    sed -i "s/\${MOTION_USER}/${MOTION_USER}/g" "${f}"
+    sed -i "s/\${MOTION_PASSWORD}/${MOTION_PASSWORD}/g" "${f}"
+    sed -i "s/\${NOTIFICATION_RECIPIENT}/${NOTIFICATION_RECIPIENT}/g" "${f}"
+  done
+}
+
+main() {
+  input_settings
+
+  print_settings
+
+  echo "Update files?"
+  select yn in "yes" "no"; do
+    case "${yn}" in
+      yes ) write_settings && exit 0 ;;
+      no ) exit 0 ;;
+    esac
+  done
+}
+
+main "$@"
